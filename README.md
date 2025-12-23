@@ -1,6 +1,6 @@
 # Pico WAV Player (PWM)
 
-Plays an embedded WAV file out of the RP2040 PWM pin (`GPIO0`) using a simple RC filter + speaker.
+Plays an embedded WAV file out of the RP2040/RP2350 PWM pin (`GPIO0`) using a simple RC filter + speaker.
 
 ## Build
 - Configure once: `cmake -S . -B build`

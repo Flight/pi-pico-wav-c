@@ -6,6 +6,8 @@
 
 // GPIO that feeds the RC filter / amplifier for PWM audio.
 #define AUDIO_PIN 0
+// GPIO that must be asserted before the rest of the program runs.
+#define POWER_SAVE_PIN 23
 
 typedef struct {
     const uint8_t *data;
@@ -126,6 +128,10 @@ static bool audio_timer_callback(struct repeating_timer *t) {
 }
 
 int main() {
+    gpio_init(POWER_SAVE_PIN);
+    gpio_set_dir(POWER_SAVE_PIN, GPIO_OUT);
+    gpio_put(POWER_SAVE_PIN, 1);
+
     stdio_init_all();
 
     wav_info_t wav = {0};
