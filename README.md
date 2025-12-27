@@ -2,6 +2,8 @@
 
 Plays an embedded WAV file out of the RP2040/RP2350 PWM pin (`GPIO0`) using a simple RC filter + speaker.
 
+![Sample](sample.jpg)
+
 ## Build
 - Configure once: `cmake -S . -B build`
 - Build: `ninja -C build`
