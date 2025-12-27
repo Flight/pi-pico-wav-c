@@ -29,19 +29,3 @@ Plays an embedded WAV file out of the RP2040/RP2350 PWM pin (`GPIO0`) using a si
 
 ## Notes
 - If playback is silent, double-check: WAV is PCM (not ADPCM/MP3), sample rate is non-zero, and the header file is included as `wav_data.h`.
-
-## MicroPython C module (rp2)
-- Build MicroPython with this module:
-  - `git clone https://github.com/micropython/micropython.git`
-  - `git submodule update --init` (inside the repo)
-  - `cmake -S ports/rp2 -B build-pico -DUSER_C_MODULES=/absolute/path/to/pico-wav-c/micropython.cmake`
-  - `cmake --build build-pico`
-  - Flash `build-pico/firmware.uf2` to the Pico.
-- Use from MicroPython (blocking playback):
-  ```python
-  import pico_wav
-  with open("sound.wav", "rb") as f:
-      data = f.read()
-  pico_wav.play(data, 0)  # GPIO0 PWM output
-  ```
-- Requirements: WAV must be PCM (8- or 16-bit), mono or stereo. Stereo is played by stepping through the buffer using the channel stride (effectively taking the first channel). Playback blocks the VM for the duration of the clip.
