@@ -19,14 +19,13 @@ Plays an embedded WAV file out of the RP2040/RP2350 PWM pin (`GPIO0`) using a si
 ## Converting your own WAV
 - The player supports PCM WAV only (no compression), 8- or 16-bit, mono or stereo. Stereo is downmixed by channel stride; sample rate is played as-is.
 - Recommended: convert to mono 8-bit unsigned PCM to match the PWM wrap (0–255).
-  - Example with ffmpeg: `ffmpeg -i sample.wav -ac 1 -ar 16000 -sample_fmt u8 out.wav`
+  - Example with ffmpeg: `ffmpeg -i in.wav -ac 1 -ar 16000 -sample_fmt u8 sound.wav`
 - Convert the WAV into a C header:
-  - `xxd -i sample.wav > wav_data.h`
+  - `xxd -i sound.wav > wav_data.h`
   - Ensure the header keeps the symbols `wav_data` and `wav_data_len` (rename if needed).
 - Rebuild: `ninja -C build` and reflash the new UF2.
 
 ## Notes
-- The sample loops when it reaches the end.
 - If playback is silent, double-check: WAV is PCM (not ADPCM/MP3), sample rate is non-zero, and the header file is included as `wav_data.h`.
 
 ## MicroPython C module (rp2)
@@ -39,7 +38,7 @@ Plays an embedded WAV file out of the RP2040/RP2350 PWM pin (`GPIO0`) using a si
 - Use from MicroPython (blocking playback):
   ```python
   import pico_wav
-  with open("sample.wav", "rb") as f:
+  with open("sound.wav", "rb") as f:
       data = f.read()
   pico_wav.play(data, 0)  # GPIO0 PWM output
   ```
