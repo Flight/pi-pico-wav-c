@@ -6,8 +6,6 @@
 
 // GPIO that feeds the RC filter / amplifier for PWM audio.
 #define AUDIO_PIN 0
-// GPIO that must be asserted before the rest of the program runs.
-#define POWER_SAVE_PIN 23
 
 typedef struct {
     const uint8_t *data;
@@ -128,19 +126,28 @@ static bool audio_timer_callback(struct repeating_timer *t) {
 }
 
 int main() {
-    gpio_init(POWER_SAVE_PIN);
-    gpio_set_dir(POWER_SAVE_PIN, GPIO_OUT);
-    gpio_put(POWER_SAVE_PIN, 1);
-
     stdio_init_all();
+
+    // Wait for USB serial connection
+    sleep_ms(2000);
+
+    printf("Pico WAV Player - USB Debug Enabled\n");
+    printf("Parsing WAV file...\n");
 
     wav_info_t wav = {0};
     if (!parse_wav(wav_data, wav_data_len, &wav)) {
         // Parsing failed; stop early so we do not drive the pin with nonsense.
+        printf("ERROR: WAV parsing failed!\n");
         while (true) {
             tight_loop_contents();
         }
     }
+
+    printf("WAV Info:\n");
+    printf("  Sample Rate: %lu Hz\n", wav.sample_rate);
+    printf("  Bits per Sample: %u\n", wav.bits_per_sample);
+    printf("  Channels: %u\n", wav.channels);
+    printf("  Data Size: %zu bytes\n", wav.data_size);
 
     playback_state_t state = {
         .info = wav,
@@ -151,17 +158,21 @@ int main() {
     };
 
     if (state.frame_stride == 0) {
+        printf("ERROR: Invalid frame stride!\n");
         while (true) {
             tight_loop_contents();
         }
     }
 
+    printf("Initializing PWM audio on GPIO %d...\n", AUDIO_PIN);
     init_pwm_audio(AUDIO_PIN, &state.slice_num);
 
     // Use a repeating timer to push samples at the WAV sample rate.
     struct repeating_timer timer;
     int64_t interval_us = -((int64_t)1000000LL / (int64_t)wav.sample_rate);
     add_repeating_timer_us(interval_us, audio_timer_callback, &state, &timer);
+
+    printf("Playback started! Timer interval: %lld us\n", interval_us);
 
     while (true) {
         tight_loop_contents();

@@ -36,28 +36,9 @@
             }
         },
         {
-            "label": "Flash",
-            "type": "process",
-            "command": "${userHome}/.pico-sdk/openocd/0.12.0+dev/openocd.exe",
-            "args": [
-                "-s",
-                "${userHome}/.pico-sdk/openocd/0.12.0+dev/scripts",
-                "-f",
-                "interface/cmsis-dap.cfg",
-                "-f",
-                "target/${command:raspberry-pi-pico.getTarget}.cfg",
-                "-c",
-                "adapter speed 5000; program \"${command:raspberry-pi-pico.launchTargetPath}\" verify reset exit"
-            ],
-            "problemMatcher": [],
-            "windows": {
-                "command": "${env:USERPROFILE}/.pico-sdk/openocd/0.12.0+dev/openocd.exe",
-            }
-        },
-        {
             "label": "Rescue Reset",
             "type": "process",
-            "command": "${userHome}/.pico-sdk/openocd/0.12.0+dev/openocd.exe",
+            "command": "${userHome}/.pico-sdk/openocd/0.12.0+dev/openocd",
             "args": [
                 "-s",
                 "${userHome}/.pico-sdk/openocd/0.12.0+dev/scripts",
@@ -70,13 +51,13 @@
             ],
             "problemMatcher": [],
             "windows": {
-                "command": "${env:USERPROFILE}/.pico-sdk/openocd/0.12.0+dev/openocd.exe",
+                "command": "${env:USERPROFILE}/.pico-sdk/openocd/0.12.0+dev/openocd.exe"
             }
         },
         {
             "label": "RISC-V Reset (RP2350)",
             "type": "process",
-            "command": "${userHome}/.pico-sdk/openocd/0.12.0+dev/openocd.exe",
+            "command": "${userHome}/.pico-sdk/openocd/0.12.0+dev/openocd",
             "args": [
                 "-s",
                 "${userHome}/.pico-sdk/openocd/0.12.0+dev/scripts",
@@ -95,7 +76,7 @@
             ],
             "problemMatcher": [],
             "windows": {
-                "command": "${env:USERPROFILE}/.pico-sdk/openocd/0.12.0+dev/openocd.exe",
+                "command": "${env:USERPROFILE}/.pico-sdk/openocd/0.12.0+dev/openocd.exe"
             }
         }
     ]
