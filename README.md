@@ -1,6 +1,6 @@
-# Pico WAV Player (PWM)
+# Pico WAV Player (PWM + DMA)
 
-Plays an embedded WAV file out of the RP2040/RP2350 PWM pin (`GPIO0`) using a simple RC filter + speaker.
+Plays an embedded WAV file out of the RP2040/RP2350 PWM pin (`GPIO0`) using a simple RC filter + speaker. Samples are streamed via DMA paced by a second PWM slice, keeping the CPU mostly idle during playback.
 
 ![Sample](sample.jpg)
 
@@ -17,6 +17,10 @@ Plays an embedded WAV file out of the RP2040/RP2350 PWM pin (`GPIO0`) using a si
 ## Wiring
 - Connect `GPIO0` through an RC filter (e.g., 10 kΩ + 0.1 µF) into your amplifier/speaker input.
 - Share ground between Pico and amplifier.
+- The PWM slice used for DMA pacing does not require an extra pin.
+
+## Configuration
+- Default audio pin is `GPIO0` (`AUDIO_PIN` in `pico-wav-c.c`). Change it if needed and reflash.
 
 ## Converting your own WAV
 - The player supports PCM WAV only (no compression), 8- or 16-bit, mono or stereo. Stereo is downmixed by channel stride; sample rate is played as-is.
@@ -29,3 +33,4 @@ Plays an embedded WAV file out of the RP2040/RP2350 PWM pin (`GPIO0`) using a si
 
 ## Notes
 - If playback is silent, double-check: WAV is PCM (not ADPCM/MP3), sample rate is non-zero, and the header file is included as `wav_data.h`.
+- Playback continues with silence once the WAV data ends; reset or power-cycle to replay.

@@ -35,7 +35,10 @@ pico_sdk_init()
 
 # Add executable. Default name is the project name, version 0.1
 
-add_executable(pico-wav-c pico-wav-c.c )
+add_executable(pico-wav-c
+        pico-wav-c.c
+        audio_pwm_dma.c
+        wav.c)
 
 pico_set_program_name(pico-wav-c "pico-wav-c")
 pico_set_program_version(pico-wav-c "0.1")
@@ -47,6 +50,7 @@ pico_enable_stdio_usb(pico-wav-c 1)
 # Add the standard library to the build
 target_link_libraries(pico-wav-c
         pico_stdlib
+        hardware_dma
         hardware_pwm)
 
 # Add the standard include files to the build
