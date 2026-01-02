@@ -9,6 +9,7 @@
 
 int main() {
     stdio_init_all();
+    sleep_ms(2000);
 
     wav_info_t wav = {0};
     if (!parse_wav(wav_data, wav_data_len, &wav)) {

@@ -6,18 +6,10 @@
 #include "hardware/pwm.h"
 #include "pico/stdlib.h"
 
-// DMA buffers hold pre-scaled 8-bit samples (0-255) as 16-bit PWM levels.
-typedef struct {
-    uint16_t *buffer;
-    size_t sample_count;
-} dma_buffer_t;
-
-// Two buffers allow refill while the other DMA channel streams.
+// Two DMA buffers allow refill while the other channel streams.
 #define DMA_SAMPLES 512
 static uint16_t dma_samples_a[DMA_SAMPLES];
 static uint16_t dma_samples_b[DMA_SAMPLES];
-static dma_buffer_t g_dma_buf_a;
-static dma_buffer_t g_dma_buf_b;
 // IRQ handler needs a stable pointer to the active player.
 static audio_player_t *g_player;
 
@@ -71,7 +63,7 @@ static void fill_dma_buffer(audio_player_t *player, uint16_t *buffer, size_t cou
             continue;
         }
 
-        uint16_t level = 128; // midpoint for silence
+        uint16_t level = 128;
         if (player->wav.bits_per_sample == 8) {
             level = player->cursor[0];
         } else {
@@ -94,15 +86,15 @@ static void __isr dma_irq_handler(void) {
     uint32_t status = dma_hw->ints0;
     if (status & (1u << g_player->dma_chan_a)) {
         dma_hw->ints0 = 1u << g_player->dma_chan_a;
-        fill_dma_buffer(g_player, g_dma_buf_a.buffer, g_dma_buf_a.sample_count);
-        dma_channel_set_read_addr(g_player->dma_chan_a, g_dma_buf_a.buffer, false);
-        dma_channel_set_trans_count(g_player->dma_chan_a, g_dma_buf_a.sample_count, false);
+        fill_dma_buffer(g_player, dma_samples_a, DMA_SAMPLES);
+        dma_channel_set_read_addr(g_player->dma_chan_a, dma_samples_a, false);
+        dma_channel_set_trans_count(g_player->dma_chan_a, DMA_SAMPLES, false);
     }
     if (status & (1u << g_player->dma_chan_b)) {
         dma_hw->ints0 = 1u << g_player->dma_chan_b;
-        fill_dma_buffer(g_player, g_dma_buf_b.buffer, g_dma_buf_b.sample_count);
-        dma_channel_set_read_addr(g_player->dma_chan_b, g_dma_buf_b.buffer, false);
-        dma_channel_set_trans_count(g_player->dma_chan_b, g_dma_buf_b.sample_count, false);
+        fill_dma_buffer(g_player, dma_samples_b, DMA_SAMPLES);
+        dma_channel_set_read_addr(g_player->dma_chan_b, dma_samples_b, false);
+        dma_channel_set_trans_count(g_player->dma_chan_b, DMA_SAMPLES, false);
     }
 }
 
@@ -132,44 +124,35 @@ bool audio_pwm_dma_init(audio_player_t *player, const wav_info_t *wav, uint gpio
     player->dma_chan_a = dma_claim_unused_channel(true);
     player->dma_chan_b = dma_claim_unused_channel(true);
 
-    g_dma_buf_a.buffer = dma_samples_a;
-    g_dma_buf_a.sample_count = DMA_SAMPLES;
-    g_dma_buf_b.buffer = dma_samples_b;
-    g_dma_buf_b.sample_count = DMA_SAMPLES;
-
-    fill_dma_buffer(player, g_dma_buf_a.buffer, g_dma_buf_a.sample_count);
-    fill_dma_buffer(player, g_dma_buf_b.buffer, g_dma_buf_b.sample_count);
+    fill_dma_buffer(player, dma_samples_a, DMA_SAMPLES);
+    fill_dma_buffer(player, dma_samples_b, DMA_SAMPLES);
 
     // Point DMA at the correct half-word (A/B) of the PWM CC register.
     uint16_t *cc_half = ((uint16_t *)&pwm_hw->slice[player->slice_num].cc) + player->pwm_channel;
-    dma_channel_config cfg_a = dma_channel_get_default_config(player->dma_chan_a);
-    dma_channel_config cfg_b = dma_channel_get_default_config(player->dma_chan_b);
-    channel_config_set_transfer_data_size(&cfg_a, DMA_SIZE_16);
-    channel_config_set_read_increment(&cfg_a, true);
-    channel_config_set_write_increment(&cfg_a, false);
-    channel_config_set_dreq(&cfg_a, DREQ_PWM_WRAP0 + player->pace_slice);
-    channel_config_set_chain_to(&cfg_a, player->dma_chan_b);
-    channel_config_set_transfer_data_size(&cfg_b, DMA_SIZE_16);
-    channel_config_set_read_increment(&cfg_b, true);
-    channel_config_set_write_increment(&cfg_b, false);
-    channel_config_set_dreq(&cfg_b, DREQ_PWM_WRAP0 + player->pace_slice);
-    channel_config_set_chain_to(&cfg_b, player->dma_chan_a);
 
-    // Chain A->B and B->A for continuous playback.
+    // Configure both DMA channels with identical settings, chained A->B and B->A.
+    dma_channel_config cfg = dma_channel_get_default_config(player->dma_chan_a);
+    channel_config_set_transfer_data_size(&cfg, DMA_SIZE_16);
+    channel_config_set_read_increment(&cfg, true);
+    channel_config_set_write_increment(&cfg, false);
+    channel_config_set_dreq(&cfg, DREQ_PWM_WRAP0 + player->pace_slice);
+
+    channel_config_set_chain_to(&cfg, player->dma_chan_b);
     dma_channel_configure(
         player->dma_chan_a,
-        &cfg_a,
+        &cfg,
         cc_half,
-        g_dma_buf_a.buffer,
-        g_dma_buf_a.sample_count,
+        dma_samples_a,
+        DMA_SAMPLES,
         false);
 
+    channel_config_set_chain_to(&cfg, player->dma_chan_a);
     dma_channel_configure(
         player->dma_chan_b,
-        &cfg_b,
+        &cfg,
         cc_half,
-        g_dma_buf_b.buffer,
-        g_dma_buf_b.sample_count,
+        dma_samples_b,
+        DMA_SAMPLES,
         false);
 
     g_player = player;

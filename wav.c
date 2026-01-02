@@ -40,14 +40,13 @@ bool parse_wav(const uint8_t *buffer, size_t length, wav_info_t *out) {
             data_size = chunk_size;
         }
 
-        // Chunks are word padded.
         offset += 8 + chunk_size + (chunk_size & 1u);
     }
 
     if (audio_format != 1 || !data_ptr || !data_size || sample_rate == 0) {
         return false;
     }
-    if (channels == 0 || (channels != 1 && channels != 2)) {
+    if (channels != 1 && channels != 2) {
         return false;
     }
     if (bits_per_sample != 8 && bits_per_sample != 16) {
